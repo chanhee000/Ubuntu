@@ -45,8 +45,8 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(line_control_node_subscriber_node src/line_control_node_subscriber.cpp)
-add_dependencies(line_control_node_subscriber_node ${line_control_node_subscriber_node_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(line_control_node_subscriber_node ${catkin_LIBRARIES})
+add_executable(line_control_node src/line_control_node.cpp)
+add_dependencies(line_control_node ${line_control_node_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(line_control_node ${catkin_LIBRARIES})
 
 
