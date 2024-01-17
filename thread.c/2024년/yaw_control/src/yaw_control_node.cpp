@@ -5,9 +5,60 @@
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2/LinearMath/Matrix3x3.h"
 
+#define DEG2RAD(x) (M_PI / 180.0) * x
+#define RAD2DEG(x) (180.0 / M_PI) * x
+
 double roll, pitch, yaw;
+double target_heading_yaw = 40;
 
 
+
+double yaw_degree(double yaw_deg)
+{
+    if (yaw_deg >= 360)
+    {
+        yaw_deg -= 360;
+    }
+    else if (yaw_deg < 0)
+    {
+        yaw_deg += 360;
+    }
+    return yaw_deg;
+}
+
+
+void yaw_control(geometry_msgs::Twist &cmd_vel)
+{
+    double Kp = 0.02;
+    double Kd = 0.3;
+    
+    double yaw_error_old = 0.0;
+    
+    double yaw_deg = RAD2DEG(yaw);
+    
+    yaw_deg = yaw_degree(yaw_deg);
+    
+    double yaw_error = target_heading_yaw - yaw_deg;
+    double yaw_error_d = yaw_error - yaw_error_old;
+    
+    double Steering_Angle = Kp * yaw_error + Kd * yaw_error_d;
+    
+    cmd_vel.linear.x = 0.8;
+    cmd_vel.linear.z = Steering_Angle;
+    
+  if (fabs(yaw_error) < 1.0)
+	{
+		cmd_vel.linear.x = 0.0; 
+		cmd_vel.linear.z = 0.0;
+	}
+    else
+    {
+        cmd_vel.linear.x = 1.0;
+        cmd_vel.linear.z = Steering_Angle; 
+    }
+    
+    yaw_error_old = yaw_error;
+}
 
 void imu1Callback(const sensor_msgs::Imu::ConstPtr& msg) 
 {
@@ -21,37 +72,37 @@ void imu1Callback(const sensor_msgs::Imu::ConstPtr& msg)
     tf2::Matrix3x3 m(q);      
 
     m.getRPY(roll, pitch, yaw);
-     
-    double yaw_deg = yaw * (180.0 / M_PI);
     
-    if (yaw_deg > 360)
-    {
-      yaw_deg = yaw_deg - 360;
-    }
-    else if (yaw_deg < 0)
-    {
-      yaw_deg = yaw_deg + 360;
-    }
+    double yaw_deg = yaw_degree(RAD2DEG(yaw));
     
     printf("degree:%.2f \n", yaw_deg);
+     
+
 }
 
 int main(int argc, char **argv)
 {
-  int count = 0;
+    int count = 0;
    
-  ros::init(argc, argv, "yaw_control");
-  ros::NodeHandle n;
-  ros::Subscriber yaw_control_sub = n.subscribe("/imu", 1000, imu1Callback);
-  ros::Rate loop_rate(30.0);
-
-  while (ros::ok())
-  {
-    ros::spinOnce();
-    loop_rate.sleep();
-    ++count;
-  }
+    geometry_msgs::Twist cmd_vel;
+   
+    ros::init(argc, argv, "yaw_control");
+    ros::NodeHandle n;
+    ros::Subscriber yaw_control_sub = n.subscribe("/imu", 1000, imu1Callback);
+    ros::Publisher yaw_cmd_vel_pub = n.advertise<geometry_msgs::Twist>("/ackermann_steering_controller/cmd_vel", 1000);
 
 
-  return 0;
+    ros::Rate loop_rate(30.0);
+
+    while (ros::ok())
+    {
+        yaw_control(cmd_vel);
+        yaw_cmd_vel_pub.publish(cmd_vel);
+
+        ros::spinOnce();
+        loop_rate.sleep();
+        ++count;
+    }
+
+    return 0;
 }
