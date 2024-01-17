@@ -11,17 +11,9 @@
 double tsl1401cl_data[TSL1401CL_SIZE];
 int LineSensor_threshold_Data[TSL1401CL_SIZE];
 
-float Kp = 0.3;
-float Ki = 0.0;
-float Kd = 0.01;
-
 float Line_Center = 147;
 float OFFSET = 0;
 
-float error = 0.0;
-float error_d = 0.0;
-float error_old = 0.0;
-float Steering_Angle = 0.0;
 
 void threshold(double tsl1401cl_data[], int ThresholdData[], int tsl1401cl_size, double threshold)
 {
@@ -65,6 +57,15 @@ int find_line_center()
 
 void lane_control(geometry_msgs::Twist &cmd_vel)
 {
+	float Kp = 0.3;
+	float Ki = 0.0;
+	float Kd = 0.01;
+	
+	float error = 0.0;
+	float error_d = 0.0;
+	float error_old = 0.0;
+	float Steering_Angle = 0.0;
+	
     if (find_line_center() == 0)
     {
         cmd_vel.linear.x = 0.0;
