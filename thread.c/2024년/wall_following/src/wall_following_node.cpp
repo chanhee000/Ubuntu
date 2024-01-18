@@ -29,7 +29,7 @@ void Left_Sonar_Callback(const sensor_msgs::Range::ConstPtr& msg)
 
 geometry_msgs::Twist PID_wall_following(double Kp,double Ki,double Kd)
 {
-	 geometry_msgs::Twist cmd_vel;
+	geometry_msgs::Twist cmd_vel;
 	
     double error = left - right;
     double error_old = 0.0;
@@ -72,10 +72,14 @@ int main(int argc, char **argv)
 
   ros::Rate loop_rate(30.0);  
   
+  double Kp = 0.5;
+  double Ki = 0.0;
+  double Kd = 0.4;
+  
   while (ros::ok())
     {
 
-        geometry_msgs::Twist cmd_vel = PID_wall_following(0.5, 0.0, 0.4);
+        geometry_msgs::Twist cmd_vel = PID_wall_following(Kp, Ki, Kd);
         sonar_cmd_vel_pub.publish(cmd_vel);
         ros::spinOnce();
         loop_rate.sleep();
