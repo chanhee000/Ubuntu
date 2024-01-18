@@ -26,12 +26,11 @@ void Left_Sonar_Callback(const sensor_msgs::Range::ConstPtr& msg)
   printf("Left:  %.2f\n", left);
 }
 
-void PID_wall_following(geometry_msgs::Twist& pid, geometry_msgs::Twist& cmd_vel)
-{
-    double Kp = 0.5;
-    double Ki = 0.0;
-    double Kd = 0.4;
 
+geometry_msgs::Twist PID_wall_following(double Kp,double Ki,double Kd)
+{
+	 geometry_msgs::Twist cmd_vel;
+	
     double error = left - right;
     double error_old = 0.0;
     double error_d = error - error_old;
@@ -52,7 +51,7 @@ void PID_wall_following(geometry_msgs::Twist& pid, geometry_msgs::Twist& cmd_vel
     }
 
 	error_old = error;
-    pid = cmd_vel;
+    return cmd_vel;
 }
 
 int main(int argc, char **argv)
@@ -76,7 +75,7 @@ int main(int argc, char **argv)
   while (ros::ok())
     {
 
-        PID_wall_following(pid_cmd_vel, cmd_vel);
+        geometry_msgs::Twist cmd_vel = PID_wall_following(0.5, 0.0, 0.4);
         sonar_cmd_vel_pub.publish(cmd_vel);
         ros::spinOnce();
         loop_rate.sleep();
