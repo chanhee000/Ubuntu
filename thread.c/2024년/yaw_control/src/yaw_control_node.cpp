@@ -27,21 +27,19 @@ double yaw_degree(double yaw_deg)
 }
 
 
-void yaw_control(geometry_msgs::Twist &cmd_vel)
+geometry_msgs::Twist yaw_control(double Kp,double Kd,double Ki)
 {
-    double Kp = 0.02;
-    double Kd = 0.3;
-    
+	geometry_msgs::Twist cmd_vel;
+	
     double yaw_error_old = 0.0;
     
     double yaw_deg = RAD2DEG(yaw);
-    
     yaw_deg = yaw_degree(yaw_deg);
     
     double yaw_error = target_heading_yaw - yaw_deg;
     double yaw_error_d = yaw_error - yaw_error_old;
-    
-    double Steering_Angle = Kp * yaw_error + Kd * yaw_error_d;
+    double error_s = 0.0;
+    double Steering_Angle = Kp * yaw_error + Kd * yaw_error_d + Ki *error_s;
     
     cmd_vel.linear.x = 0.8;
     cmd_vel.linear.z = Steering_Angle;
@@ -94,9 +92,13 @@ int main(int argc, char **argv)
 
     ros::Rate loop_rate(30.0);
 
+	double Kp = 0.5;
+	double Ki = 0.0;
+	double Kd = 0.4;
+
     while (ros::ok())
     {
-        yaw_control(cmd_vel);
+         geometry_msgs::Twist cmd_vel = yaw_control(Kp,Kd,Ki);
         yaw_cmd_vel_pub.publish(cmd_vel);
 
         ros::spinOnce();
