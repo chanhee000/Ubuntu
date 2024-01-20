@@ -62,7 +62,7 @@ double find_line_center()
 
     if (sum == 0)
     {
-        return 0;
+        sum = 1;
     }
 
     centroid = centroid / sum;
@@ -338,9 +338,9 @@ int main(int argc, char **argv)
 			   	cmd_vel.linear.x = 0.0;
 				cmd_vel.angular.z = 0.0;
            }
-           break;
+           
 		}
-    		 
+    	break; 
 		
 	}
         cmd_vel_pub.publish(cmd_vel);
