@@ -14,138 +14,138 @@
 #include <math.h>
 
 
-#define MAX_R_ANGLE -50
-#define MAX_L_ANGLE 50
+#define MAX_RIGHT_ANGLE -50
+#define MAX_LEFT_ANGLE 50
 
-#define MAX_ROBOT_SPEED  250
-#define MIN_ROBOT_SPEED  -250
+#define MAX_SPEED  250
+#define MIN_SPEED  -250
 
 #define DEG2RAD(x) (M_PI/180.0*(x) )
 #define RAD2DEG(x) ((x)*180.0/M_PI)
 #define RPM2RPS(x) ((x)/60)
 #define RPS2RPM(x) ((x)*60)
 
-//i2c <address>  
+// I2C address  
 #define ADDRESS 0x05
 
-//i2c <bus>  
-static const char *deviceName = "/dev/i2c-0";
+// I2C bus  
+static const char *i2cDevice = "/dev/i2c-0";
 
-double speed_factor = 255;
-double steer_factor = 20;
-int file_I2C;
+double speedFactor = 255;
+double steerFactor = 20;
+int i2cFile;
 
 
 union
 {
     short data;
-    char byte_data[2];
-} steering_angle, motor_speed;
+    char byteData[2];
+} steeringAngle, motorSpeed;
 
-unsigned char protocal_data[9] ={0,};
+unsigned char protocolData[9] ={0,};
 
-int open_I2C(void)
+int openI2C(void)
 {
    int file;  
    
-    if ((file = open( deviceName, O_RDWR ) ) < 0)  
+    if ((file = open(i2cDevice, O_RDWR)) < 0)  
     {  
-        fprintf(stderr, "I2C: Failed %s\n", deviceName);  
+        fprintf(stderr, "Failed %s\n", i2cDevice);  
         exit(1);  
     }  
-    printf("I2C: Connected\n");  
+    printf("Connected\n");  
  
-    printf("I2C: acquiring buss to 0x%x\n", ADDRESS);  
+    printf("Acquiring bus to 0x%x\n", ADDRESS);  
     if (ioctl(file, I2C_SLAVE, ADDRESS) < 0)  
     {  
-        fprintf(stderr, "I2C: Failed to acquire bus access/talk to slave 0x%x\n", ADDRESS);  
+        fprintf(stderr, "Failed to acquire bus access/talk to slave 0x%x\n", ADDRESS);  
         exit(1);  
     }
    
     return file;
 }
 
-void close_I2C(int fd)
+void closeI2C(int fd)
 {
    close(fd);
 }
 
 
-void cmd_callback(const geometry_msgs::Twist & cmd_vel)
+void cmdCallback(const geometry_msgs::Twist &cmdVel)
 {
-    double angular_temp;
-    double linear_temp;
+    double angularTemp;
+    double linearTemp;
    
-    linear_temp  = cmd_vel.linear.x ;
-    angular_temp = cmd_vel.angular.z ;
+    linearTemp  = cmdVel.linear.x ;
+    angularTemp = cmdVel.angular.z ;
 
 
 	  
-    steering_angle.data  = (short)angular_temp;
+    steeringAngle.data  = (short)angularTemp;
        
-    if(linear_temp >=  MAX_ROBOT_SPEED)
+    if(linearTemp >=  MAX_SPEED)
     {
-		linear_temp = MAX_ROBOT_SPEED;
+		linearTemp = MAX_SPEED;
 	}
-    if(linear_temp <=  MIN_ROBOT_SPEED)
+    if(linearTemp <=  MIN_SPEED)
     {
-		linear_temp = MIN_ROBOT_SPEED;
+		linearTemp = MIN_SPEED;
 	}
 
-    motor_speed.data = (short)linear_temp;
+    motorSpeed.data = (short)linearTemp;
     
-    if(angular_temp <= MAX_R_ANGLE)  
+    if(angularTemp <= MAX_RIGHT_ANGLE)  
     {
-		angular_temp = MAX_R_ANGLE;
+		angularTemp = MAX_RIGHT_ANGLE;
 	}
-    if(angular_temp >= MAX_L_ANGLE)
+    if(angularTemp >= MAX_LEFT_ANGLE)
     {
-		angular_temp = MAX_L_ANGLE;
+		angularTemp = MAX_LEFT_ANGLE;
 	}
 }
 
 int main(int argc, char **argv)
 {
-  file_I2C = open_I2C();
+  i2cFile = openI2C();
   
-  if(file_I2C < 0)
+  if(i2cFile < 0)
   {
-	  printf("Unable to open I2C\n");
+	  printf("open I2C\n");
 	  return -1;
   }
   else
   {
-	  printf("I2C is Connected\n");
+	  printf("connected\n");
   }
  
   ros::init(argc, argv, "car_control_node");
   ros::NodeHandle n;
 
-  std::string cmd_vel_topic = "/cmd_vel";
+  std::string cmdVelTopic = "/cmd_vel";
  
-  ros::Subscriber sub_car_control = n.subscribe(cmd_vel_topic, 20, cmd_callback);
+  ros::Subscriber subCarControl = n.subscribe(cmdVelTopic, 20, cmdCallback);
  
-  ros::Rate loop_rate(20);
+  ros::Rate loopRate(20);
  
   while(ros::ok())
   {
-	protocal_data[0] = '#';
-	protocal_data[1] = 'C';
-	protocal_data[2] = steering_angle.byte_data[0];
-	protocal_data[3] = steering_angle.byte_data[1];
-	protocal_data[4] = motor_speed.byte_data[0];
-	protocal_data[5] = motor_speed.byte_data[1];
-	protocal_data[6] = 0;  
-	protocal_data[7] = 0;    
-	protocal_data[8] = '*';
+	protocolData[0] = '#';
+	protocolData[1] = 'C';
+	protocolData[2] = steeringAngle.byteData[0];
+	protocolData[3] = steeringAngle.byteData[1];
+	protocolData[4] = motorSpeed.byteData[0];
+	protocolData[5] = motorSpeed.byteData[1];
+	protocolData[6] = 0;  
+	protocolData[7] = 0;    
+	protocolData[8] = '*';
    
-	write(file_I2C, protocal_data, 9);
+	write(i2cFile, protocolData, 9);
 	
-	printf("motor_speed: %d\n", motor_speed.data);
-	printf("steering_angle: %d \n\n", steering_angle.data);
+	printf("Motor speed: %d\n", motorSpeed.data);
+	printf("Steering angle: %d \n\n", steeringAngle.data);
 	
 	ros::spinOnce();
-	loop_rate.sleep();
+	loopRate.sleep();
   }
 
   return 0;
